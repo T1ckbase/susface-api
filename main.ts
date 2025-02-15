@@ -12,7 +12,7 @@ app.get('/', (c) => c.text('Hello Hono!'));
 app.post('*', async (c) => {
   const url = new URL(c.req.url);
   const targetPath = url.pathname + url.search;
-  const targetUrl = `${HF_API_URL}${targetPath}`;
+  const targetUrl = `${c.req.header('base-url') ?? HF_API_URL}${targetPath}`;
 
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
