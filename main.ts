@@ -16,6 +16,7 @@ app.post('*', async (c) => {
 
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
+  headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
 
   return await fetch(targetUrl, {
     method: 'POST',
