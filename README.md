@@ -1,6 +1,6 @@
 ---
 title: Susface Api
-emoji: 🌍
+emoji: 🤨
 colorFrom: indigo
 colorTo: green
 sdk: docker
