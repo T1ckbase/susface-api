@@ -10,9 +10,8 @@ app.use(logger());
 app.get('/', (c) => c.text('Hello Hono!'));
 
 app.post('*', async (c) => {
-  const url = new URL(c.req.url);
-  const targetPath = url.pathname + url.search;
-  const targetUrl = `${HF_API_URL}${targetPath}`;
+  const { pathname, search } = new URL(c.req.url);
+  const targetUrl = `${HF_API_URL}${pathname}${search}`;
 
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
