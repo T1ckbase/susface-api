@@ -7,8 +7,8 @@ WORKDIR /app
 # Prefer not to run as root.
 USER deno
 
-COPY . /app
-
 RUN deno install --entrypoint main.ts
+
+COPY . .
 
 CMD ["run", "-A", "main.ts"]
