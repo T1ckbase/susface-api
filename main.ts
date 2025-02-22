@@ -24,4 +24,5 @@ app.post('*', async (c) => {
   });
 });
 
-Deno.serve({ port: 7860 }, app.fetch);
+// Deno.serve({ port: 7860 }, app.fetch);
+export default app.fetch;
