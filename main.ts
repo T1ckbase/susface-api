@@ -12,7 +12,19 @@ app.get('/', (c) => c.text('Hello Hono!'));
 app.get('/v1/models', (c) =>
   c.json({
     object: 'list',
-    data: [],
+    data: [
+      {
+        'id': 'meta-llama/Llama-3.2-11B-Vision-Instruct',
+        'object': 'model',
+        'type': 'vlm',
+        'publisher': 'lmstudio-community',
+        'arch': 'llama',
+        'compatibility_type': 'gguf',
+        'quantization': 'Q4_K_M',
+        'state': 'not-loaded',
+        'max_context_length': 131072,
+      },
+    ],
   }));
 
 app.post('*', async (c) => {
