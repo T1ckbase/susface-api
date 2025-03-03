@@ -7,9 +7,7 @@ const HF_API_URL = 'https://api-inference.huggingface.co';
 const app = new Hono();
 
 app.use(logger());
-app.get('/', (c) => c.text('Hello Hono!'));
-
-app.get('/models', (c) => c.text('models'));
+app.get('*', (c) => c.text('Hello Hono!'));
 
 app.post('*', async (c) => {
   const { pathname, search } = new URL(c.req.url);
