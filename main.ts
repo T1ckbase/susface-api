@@ -45,7 +45,7 @@ app.post('/v1/chat/completions', async (c) => {
   // body.max_tokens = 33554432;
 
   const body = await c.req.json();
-  body.max_tokens = 33554432;
+  // body.max_tokens = 33554432;
 
   console.log('body:', body);
 
