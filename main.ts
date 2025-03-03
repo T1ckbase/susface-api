@@ -32,12 +32,7 @@ app.get('/v1/models', (c) => {
 app.post('/v1/chat/completions', async (c) => {
   const { pathname, search } = new URL(c.req.url);
   const targetUrl = `${HF_API_URL}${pathname}${search}`;
-
-  const clonedRequest = await c.req.raw.clone();
-  const body = await clonedRequest.json();
-  // body.max_tokens = 33554432;
-  console.log(body);
-  console.log(targetUrl);
+  // console.log(targetUrl);
 
   const headers = new Headers(c.req.raw.headers);
   // headers.delete('Host');
@@ -45,10 +40,15 @@ app.post('/v1/chat/completions', async (c) => {
   headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
   console.log('headers:', Object.fromEntries(headers));
 
+  const clonedRequest = await c.req.raw.clone();
+  const body = await clonedRequest.json();
+  body.max_tokens = 33554432;
+  console.log('body:', body);
+
   return await fetch(targetUrl, {
     method: 'POST',
     headers: headers,
-    body: c.req.raw.body,
+    body: body,
   });
 });
 
