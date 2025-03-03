@@ -35,7 +35,7 @@ app.post('/v1/chat/completions', async (c) => {
 
   const clonedRequest = await c.req.raw.clone();
   const body = await clonedRequest.json();
-  delete body.max_tokens;
+  body.max_tokens = 33554432;
   console.log(body);
 
   const headers = new Headers(c.req.raw.headers);
