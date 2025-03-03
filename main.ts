@@ -9,8 +9,9 @@ const app = new Hono();
 app.use(logger());
 app.get('/', (c) => c.text('Hello Hono!'));
 
-app.get('/v1/models', (c) =>
-  c.json({
+// LM Studio
+app.get('/v1/models', (c) => {
+  return c.json({
     object: 'list',
     data: [
       {
@@ -25,11 +26,17 @@ app.get('/v1/models', (c) =>
         'max_context_length': 131072,
       },
     ],
-  }));
+  });
+});
 
-app.post('*', async (c) => {
+app.post('/v1/chat/completions', async (c) => {
   const { pathname, search } = new URL(c.req.url);
   const targetUrl = `${HF_API_URL}${pathname}${search}`;
+
+  const clonedRequest = await c.req.raw.clone();
+  const body = await clonedRequest.json();
+  delete body.max_tokens;
+  console.log(body);
 
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
