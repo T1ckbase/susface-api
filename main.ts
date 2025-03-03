@@ -9,6 +9,8 @@ const app = new Hono();
 app.use(logger());
 app.get('/', (c) => c.text('Hello Hono!'));
 
+app.get('/models', (c) => c.text('models'));
+
 app.post('*', async (c) => {
   const { pathname, search } = new URL(c.req.url);
   const targetUrl = `${HF_API_URL}${pathname}${search}`;
