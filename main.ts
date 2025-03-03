@@ -45,7 +45,7 @@ app.post('/v1/chat/completions', async (c) => {
   return await fetch(targetUrl, {
     method: 'POST',
     headers: headers,
-    body,
+    body: JSON.stringify(body),
   });
 });
 
