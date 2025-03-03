@@ -35,17 +35,20 @@ app.post('/v1/chat/completions', async (c) => {
 
   const clonedRequest = await c.req.raw.clone();
   const body = await clonedRequest.json();
-  body.max_tokens = 33554432;
+  // body.max_tokens = 33554432;
   console.log(body);
+  console.log(targetUrl);
 
   const headers = new Headers(c.req.raw.headers);
+  // headers.delete('Host');
   headers.delete('Authorization');
   headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
+  console.log('headers:', Object.fromEntries(headers));
 
   return await fetch(targetUrl, {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify(body),
+    body: c.req.raw.body,
   });
 });
 
