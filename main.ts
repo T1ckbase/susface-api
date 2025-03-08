@@ -3,6 +3,7 @@ import { logger } from '@hono/hono/logger';
 
 // https://api-inference.huggingface.co/v1
 const HF_API_URL = 'https://api-inference.huggingface.co';
+const JINA_API_URL = 'https://deepsearch.jina.ai';
 
 const app = new Hono();
 
@@ -30,10 +31,6 @@ app.get('/v1/models', (c) => {
 });
 
 app.post('/v1/chat/completions', async (c) => {
-  const { pathname, search } = new URL(c.req.url);
-  const targetUrl = `${HF_API_URL}${pathname}${search}`;
-  // console.log(targetUrl);
-
   const headers = new Headers(c.req.raw.headers);
   // headers.delete('Host');
   headers.delete('Authorization');
@@ -49,6 +46,10 @@ app.post('/v1/chat/completions', async (c) => {
   delete body.max_tokens;
 
   console.log('body:', body);
+
+  const { pathname, search } = new URL(c.req.url);
+  const targetUrl = `${body.model === 'jina-deepsearch-v1' ? JINA_API_URL : HF_API_URL}${pathname}${search}`;
+  // console.log(targetUrl);
 
   return await fetch(targetUrl, {
     method: 'POST',
