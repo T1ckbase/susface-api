@@ -86,7 +86,7 @@ app.post('/v1/chat/completions', async (c) => {
 
 app.post('/v1/images/generations', async (c) => {
   const headers = new Headers(c.req.raw.headers);
-  // headers.delete('Authorization');
+  headers.delete('Authorization');
   headers.has('x-use-cache') || headers.set('x-use-cache', 'false');
   console.log('headers:', Object.fromEntries(headers));
 
@@ -121,7 +121,6 @@ app.post('/v1/images/generations', async (c) => {
   if (!response.ok) return response;
 
   const contentType = response.headers.get('content-type')!;
-  const ext = contentType.substring('image/'.length).toLowerCase();
   const imageArrayBuffer = await response.arrayBuffer();
   const imageData = new Uint8Array(imageArrayBuffer);
 
