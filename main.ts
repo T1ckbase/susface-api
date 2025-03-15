@@ -58,5 +58,9 @@ app.post('/v1/chat/completions', async (c) => {
   });
 });
 
+app.post('/v1/images/generations', async (c) => {
+  console.log('body:', await c.req.json());
+});
+
 // Deno.serve({ port: 7860 }, app.fetch);
 export default app.fetch;
