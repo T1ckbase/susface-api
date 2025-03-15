@@ -44,10 +44,15 @@ export async function generateImage(params: OpenAI.ImageGenerateParams): Promise
       const data = JSON.parse(event.data);
       if (eventId !== data.event_id) return;
       if (data.msg === 'process_completed') {
-        const url: string = data.output.data[0].url;
-        eventSource.close();
-        resolve(url);
+        try {
+          const url: string = data.output.data[0].url;
+          eventSource.close();
+          resolve(url);
+        } catch (e) {
+          reject(e);
+        }
       }
+      if (data.msg === 'close_stream') reject('close_stream');
     };
 
     eventSource.onerror = (event) => {
