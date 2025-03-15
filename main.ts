@@ -75,6 +75,7 @@ app.post('/v1/images/generations', async (c) => {
   console.log('request body:', params);
 
   const targetUrl = `${HF_API_URL}/models/${params.model}`;
+  console.log(targetUrl);
 
   const { width = 1024, height = 1024 } = parseResolution(params.size as string);
 
