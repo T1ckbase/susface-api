@@ -80,7 +80,7 @@ app.post('/v1/images/generations', async (c) => {
   const { width = 1024, height = 1024 } = parseResolution(params.size as string);
 
   const requestBody: any = {
-    input: params.prompt,
+    inputs: params.prompt,
     parameters: {
       width,
       height,
