@@ -41,6 +41,7 @@ export async function generateImage(params: OpenAI.ImageGenerateParams): Promise
     const eventSource = new EventSource(`https://black-forest-labs-flux-1-dev.hf.space/gradio_api/queue/data?session_hash=${sessionHash}`);
 
     eventSource.onmessage = (event) => {
+      console.log(event.data);
       const data = JSON.parse(event.data);
       if (eventId !== data.event_id) return;
       if (data.msg === 'process_completed') {
