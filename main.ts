@@ -17,7 +17,24 @@ app.use(logger());
 
 app.get('/', (c) => c.text('Hello Hono!'));
 
-app.use('/tmp/*', serveStatic({ root: './' }));
+// In-memory storage for images
+const imageCache = new Map<string, { data: Uint8Array; contentType: string }>();
+
+// Modified route to serve from in-memory cache instead of filesystem
+app.get('/tmp/:id', async (c) => {
+  const id = c.req.param('id');
+  const cachedImage = imageCache.get(id);
+
+  if (!cachedImage) {
+    return c.text('Image not found', 404);
+  }
+
+  return new Response(cachedImage.data, {
+    headers: {
+      'Content-Type': cachedImage.contentType,
+    },
+  });
+});
 
 // LM Studio
 app.get('/v1/models', (c) => {
@@ -69,7 +86,7 @@ app.post('/v1/chat/completions', async (c) => {
 
 app.post('/v1/images/generations', async (c) => {
   const headers = new Headers(c.req.raw.headers);
-  headers.delete('Authorization');
+  // headers.delete('Authorization');
   headers.has('x-use-cache') || headers.set('x-use-cache', 'false');
   console.log('headers:', Object.fromEntries(headers));
 
@@ -103,13 +120,22 @@ app.post('/v1/images/generations', async (c) => {
   });
   if (!response.ok) return response;
 
-  const ext = response.headers.get('content-type')!.substring('image/'.length).toLowerCase();
-  const image = await response.arrayBuffer();
-  const fileName = `${crypto.randomUUID()}.${ext}`;
-  const url = `${headers.get('Host')}/tmp/${fileName}`;
+  const contentType = response.headers.get('content-type')!;
+  const ext = contentType.substring('image/'.length).toLowerCase();
+  const imageArrayBuffer = await response.arrayBuffer();
+  const imageData = new Uint8Array(imageArrayBuffer);
 
-  await ensureDir('/tmp');
-  await Deno.writeFile(`/tmp/${fileName}`, new Uint8Array(image), { create: true });
+  // Generate a unique ID without the file extension
+  const fileId = crypto.randomUUID();
+
+  // Store in our in-memory cache instead of writing to disk
+  imageCache.set(fileId, {
+    data: imageData,
+    contentType: contentType,
+  });
+
+  const host = headers.get('Host') || c.req.header('Host');
+  const url = `${host}/tmp/${fileId}`;
 
   console.log(url);
   let data: any = {
@@ -117,16 +143,16 @@ app.post('/v1/images/generations', async (c) => {
   };
   if (params.response_format === 'b64_json') {
     data = {
-      b64_json: encodeBase64(image),
+      b64_json: encodeBase64(imageArrayBuffer),
     };
   }
 
-  const resposne = {
+  const responseBody = {
     created: Math.floor(Date.now() / 1000),
     data: [data],
   };
 
-  return new Response(JSON.stringify(resposne));
+  return c.json(responseBody);
 
   // switch (body.model) {
   //   case 'flux-dev': {
