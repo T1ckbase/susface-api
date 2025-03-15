@@ -6,7 +6,8 @@
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.7.1",
     "@openai/openai": "jsr:@openai/openai@^4.87.3",
-    "@std/encoding": "jsr:@std/encoding@^1.0.7"
+    "@std/encoding": "jsr:@std/encoding@^1.0.7",
+    "@std/fs": "jsr:@std/fs@^1.0.14"
   },
   "fmt": {
     "indentWidth": 2,

@@ -5,6 +5,7 @@ import { generateImage as fluxGenerateImage } from './gradio-api/flux.ts';
 import { parseResolution } from './utils/string.ts';
 import OpenAI from '@openai/openai';
 import { encodeBase64 } from '@std/encoding/base64';
+import { ensureDir } from '@std/fs';
 
 // https://api-inference.huggingface.co/v1
 const HF_API_URL = 'https://api-inference.huggingface.co';
@@ -105,6 +106,7 @@ app.post('/v1/images/generations', async (c) => {
   const image = await response.arrayBuffer();
   const fileName = `${crypto.randomUUID()}.${ext}`;
 
+  await ensureDir('./tmp');
   await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image), { create: true });
 
   let data: any = {
