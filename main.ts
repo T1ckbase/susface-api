@@ -14,7 +14,7 @@ const JINA_API_URL = 'https://deepsearch.jina.ai';
 const app = new Hono();
 
 app.use(logger());
-app.use('/tmp/*', serveStatic({ root: './tmp' }));
+app.use('/tmp/*', serveStatic({ root: '/tmp' }));
 
 app.get('/', (c) => c.text('Hello Hono!'));
 
