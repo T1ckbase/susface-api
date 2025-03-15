@@ -106,52 +106,103 @@ app.post('/v1/images/generations', async (c) => {
     },
   };
 
-  headers.has('guidance_scale') && (requestBody.parameters.guidance_scale = parseFloat(headers.get('guidance_scale')!));
-  headers.has('negative_prompt') && (requestBody.parameters.negative_prompt = headers.get('negative_prompt'));
-  headers.has('num_inference_steps') && (requestBody.parameters.num_inference_steps = parseInt(headers.get('num_inference_steps')!));
-  headers.has('scheduler') && (requestBody.parameters.scheduler = headers.get('scheduler'));
-  headers.has('seed') && (requestBody.parameters.seed = parseInt(headers.get('seed')!));
+  if (headers.has('guidance_scale')) {
+    requestBody.parameters.guidance_scale = parseFloat(headers.get('guidance_scale')!);
+    headers.delete('guidance_scale');
+  }
+  if (headers.has('negative_prompt')) {
+    requestBody.parameters.negative_prompt = headers.get('negative_prompt');
+    headers.delete('negative_prompt');
+  }
+  if (headers.has('num_inference_steps')) {
+    requestBody.parameters.num_inference_steps = parseInt(headers.get('num_inference_steps')!);
+    headers.delete('num_inference_steps');
+  }
+  if (headers.has('scheduler')) {
+    requestBody.parameters.scheduler = headers.get('scheduler');
+    headers.delete('scheduler');
+  }
+  if (headers.has('seed')) {
+    requestBody.parameters.seed = parseInt(headers.get('seed')!);
+    headers.delete('seed');
+  }
   console.log('new body:', requestBody);
 
-  const response = await fetch(targetUrl, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(requestBody),
+  // Determine how many images to generate (default to 1)
+  const numImages = params.n || 1;
+
+  // Create an array of promises for parallel execution
+  const imagePromises = Array.from({ length: numImages }, async (_, i) => {
+    // Clone the request body to avoid race conditions
+    const currentRequestBody = structuredClone(requestBody);
+
+    // If a seed was provided, increment it for each image to ensure variety
+    if (currentRequestBody.parameters.seed !== undefined && i > 0) {
+      currentRequestBody.parameters.seed += i; // Add index to ensure unique seeds
+    }
+
+    // Create a copy of headers for each request
+    const currentHeaders = new Headers(headers);
+
+    try {
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: currentHeaders,
+        body: JSON.stringify(currentRequestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
+      }
+
+      const contentType = response.headers.get('content-type')!;
+      const imageArrayBuffer = await response.arrayBuffer();
+      const imageData = new Uint8Array(imageArrayBuffer);
+
+      // Generate a unique ID without the file extension
+      const fileId = crypto.randomUUID();
+
+      // Store in our in-memory cache instead of writing to disk
+      imageCache.set(fileId, {
+        data: imageData,
+        contentType: contentType,
+      });
+
+      const host = headers.get('Host') || c.req.header('Host');
+      const url = `${host}/tmp/${fileId}`;
+
+      console.log(`Generated image ${i + 1}/${numImages}: ${url}`);
+
+      // Create the appropriate data format based on the response_format
+      if (params.response_format === 'b64_json') {
+        return {
+          b64_json: encodeBase64(imageArrayBuffer),
+        };
+      } else {
+        return {
+          url,
+        };
+      }
+    } catch (error) {
+      console.error(`Error generating image ${i + 1}:`, error);
+      throw error;
+    }
   });
-  if (!response.ok) return response;
 
-  const contentType = response.headers.get('content-type')!;
-  const imageArrayBuffer = await response.arrayBuffer();
-  const imageData = new Uint8Array(imageArrayBuffer);
+  try {
+    // Wait for all image generation promises to complete
+    const imageResults = await Promise.all(imagePromises);
 
-  // Generate a unique ID without the file extension
-  const fileId = crypto.randomUUID();
-
-  // Store in our in-memory cache instead of writing to disk
-  imageCache.set(fileId, {
-    data: imageData,
-    contentType: contentType,
-  });
-
-  const host = headers.get('Host') || c.req.header('Host');
-  const url = `${host}/tmp/${fileId}`;
-
-  console.log(url);
-  let data: any = {
-    url,
-  };
-  if (params.response_format === 'b64_json') {
-    data = {
-      b64_json: encodeBase64(imageArrayBuffer),
+    const responseBody = {
+      created: Math.floor(Date.now() / 1000),
+      data: imageResults,
     };
+
+    return c.json(responseBody);
+  } catch (error) {
+    console.error('Error in parallel image generation:', error);
+    return c.json({ error: 'Failed to generate one or more images' }, 500);
   }
-
-  const responseBody = {
-    created: Math.floor(Date.now() / 1000),
-    data: [data],
-  };
-
-  return c.json(responseBody);
 
   // switch (body.model) {
   //   case 'flux-dev': {
