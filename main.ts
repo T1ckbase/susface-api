@@ -107,7 +107,7 @@ app.post('/v1/images/generations', async (c) => {
   const fileName = `${crypto.randomUUID()}.${ext}`;
 
   await ensureDir('./tmp');
-  await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image), { create: true });
+  await Deno.writeFile(`/tmp/${fileName}`, new Uint8Array(image), { create: true });
 
   let data: any = {
     url: `${headers.get('Host')}/tmp/${fileName}`,
