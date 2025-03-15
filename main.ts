@@ -168,7 +168,7 @@ app.post('/v1/images/generations', async (c) => {
         contentType: contentType,
       });
 
-      const host = headers.get('Host') || c.req.header('Host');
+      const host = 'https://' + Deno.env.get('SPACE_HOST');
       const url = `${host}/tmp/${fileId}`;
 
       console.log(`Generated image ${i + 1}/${numImages}: ${url}`);
@@ -213,6 +213,22 @@ app.post('/v1/images/generations', async (c) => {
   // }
 
   // return c.text('skibidi', 400);
+});
+
+app.post('*', async (c) => {
+  const headers = new Headers(c.req.raw.headers);
+  headers.delete('Authorization');
+  headers.has('x-use-cache') || headers.set('x-use-cache', 'false');
+  console.log('headers:', Object.fromEntries(headers));
+
+  const { pathname, search } = new URL(c.req.url);
+  const targetUrl = `${HF_API_URL}${pathname}${search}`;
+
+  return await fetch(targetUrl, {
+    method: 'POST',
+    headers: headers,
+    body: c.req.raw.body,
+  });
 });
 
 // Deno.serve({ port: 7860 }, app.fetch);
