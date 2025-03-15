@@ -1,8 +1,10 @@
 import { Hono } from '@hono/hono';
 import { logger } from '@hono/hono/logger';
+import { serveStatic } from '@hono/hono/deno';
 import { generateImage as fluxGenerateImage } from './gradio-api/flux.ts';
 import { parseResolution } from './utils/string.ts';
 import OpenAI from '@openai/openai';
+import { encodeBase64 } from '@std/encoding/base64';
 
 // https://api-inference.huggingface.co/v1
 const HF_API_URL = 'https://api-inference.huggingface.co';
@@ -11,6 +13,8 @@ const JINA_API_URL = 'https://deepsearch.jina.ai';
 const app = new Hono();
 
 app.use(logger());
+app.use('/tmp/*', serveStatic({ root: './tmp' }));
+
 app.get('/', (c) => c.text('Hello Hono!'));
 
 // LM Studio
@@ -62,18 +66,71 @@ app.post('/v1/chat/completions', async (c) => {
 });
 
 app.post('/v1/images/generations', async (c) => {
-  const body = await c.req.json<OpenAI.ImageGenerateParams>();
-  console.log('body:', body);
+  const headers = new Headers(c.req.raw.headers);
+  headers.delete('Authorization');
+  headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
+  console.log('headers:', Object.fromEntries(headers));
 
-  switch (body.model) {
-    case 'flux-dev': {
-      return await fluxGenerateImage(body);
-    }
-    default:
-      return c.text('unknown model', 400);
+  const params = await c.req.json<OpenAI.ImageGenerateParams>();
+  console.log('request body:', params);
+
+  const { pathname, search } = new URL(c.req.url);
+  const targetUrl = `${HF_API_URL}${pathname}${search}/models/${params.model}`;
+
+  const { width = 1024, height = 1024 } = parseResolution(params.size as string);
+
+  const requestBody: any = {
+    input: params.prompt,
+    parameters: {
+      width,
+      height,
+    },
+  };
+
+  headers.has('guidance_scale') && (requestBody.parameters.guidance_scale = parseFloat(headers.get('guidance_scale')!));
+  headers.has('negative_prompt') && (requestBody.parameters.negative_prompt = headers.get('negative_prompt'));
+  headers.has('num_inference_steps') && (requestBody.parameters.num_inference_steps = parseInt(headers.get('num_inference_steps')!));
+  headers.has('scheduler') && (requestBody.parameters.scheduler = headers.get('scheduler'));
+  headers.has('seed') && (requestBody.parameters.seed = parseInt(headers.get('seed')!));
+
+  const response = await fetch(targetUrl, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) return response;
+
+  const ext = response.headers.get('content-type')!.substring('image/'.length).toLowerCase();
+  const image = await response.arrayBuffer();
+  const fileName = `${crypto.randomUUID()}.${ext}`;
+
+  await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image));
+
+  let data: any = {
+    url: `https://t1ckbase-susface-api.hf.space/tmp/${fileName}`,
+  };
+  if (params.response_format === 'b64_json') {
+    data = {
+      b64_json: encodeBase64(image),
+    };
   }
 
-  return c.text('skibidi', 400);
+  const resposne = {
+    created: Math.floor(Date.now() / 1000),
+    data: [data],
+  };
+
+  return new Response(JSON.stringify(resposne));
+
+  // switch (body.model) {
+  //   case 'flux-dev': {
+  //     return await fluxGenerateImage(body);
+  //   }
+  //   default:
+  //     return c.text('unknown model', 400);
+  // }
+
+  // return c.text('skibidi', 400);
 });
 
 // Deno.serve({ port: 7860 }, app.fetch);
