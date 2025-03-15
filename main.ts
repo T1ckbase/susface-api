@@ -92,6 +92,7 @@ app.post('/v1/images/generations', async (c) => {
   headers.has('num_inference_steps') && (requestBody.parameters.num_inference_steps = parseInt(headers.get('num_inference_steps')!));
   headers.has('scheduler') && (requestBody.parameters.scheduler = headers.get('scheduler'));
   headers.has('seed') && (requestBody.parameters.seed = parseInt(headers.get('seed')!));
+  console.log('new body:', requestBody);
 
   const response = await fetch(targetUrl, {
     method: 'POST',
