@@ -74,8 +74,7 @@ app.post('/v1/images/generations', async (c) => {
   const params = await c.req.json<OpenAI.ImageGenerateParams>();
   console.log('request body:', params);
 
-  const { pathname, search } = new URL(c.req.url);
-  const targetUrl = `${HF_API_URL}${pathname}${search}/models/${params.model}`;
+  const targetUrl = `${HF_API_URL}/models/${params.model}`;
 
   const { width = 1024, height = 1024 } = parseResolution(params.size as string);
 
