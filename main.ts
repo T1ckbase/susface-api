@@ -106,7 +106,7 @@ app.post('/v1/images/generations', async (c) => {
   await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image));
 
   let data: any = {
-    url: `https://t1ckbase-susface-api.hf.space/tmp/${fileName}`,
+    url: `${headers.get('Host')}/tmp/${fileName}`,
   };
   if (params.response_format === 'b64_json') {
     data = {
