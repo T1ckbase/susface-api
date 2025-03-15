@@ -105,12 +105,14 @@ app.post('/v1/images/generations', async (c) => {
   const ext = response.headers.get('content-type')!.substring('image/'.length).toLowerCase();
   const image = await response.arrayBuffer();
   const fileName = `${crypto.randomUUID()}.${ext}`;
+  const url = `${headers.get('Host')}/tmp/${fileName}`;
 
-  await ensureDir('./tmp');
+  await ensureDir('/tmp');
   await Deno.writeFile(`/tmp/${fileName}`, new Uint8Array(image), { create: true });
 
+  console.log(url);
   let data: any = {
-    url: `${headers.get('Host')}/tmp/${fileName}`,
+    url,
   };
   if (params.response_format === 'b64_json') {
     data = {
