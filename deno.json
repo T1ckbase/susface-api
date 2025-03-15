@@ -4,7 +4,9 @@
     "serve": "deno serve --allow-net --watch --port 7860 serve.ts"
   },
   "imports": {
-    "@hono/hono": "jsr:@hono/hono@^4.7.1"
+    "@hono/hono": "jsr:@hono/hono@^4.7.1",
+    "@openai/openai": "jsr:@openai/openai@^4.87.3",
+    "@std/encoding": "jsr:@std/encoding@^1.0.7"
   },
   "fmt": {
     "indentWidth": 2,

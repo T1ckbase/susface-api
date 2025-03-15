@@ -1,5 +1,8 @@
 import { Hono } from '@hono/hono';
 import { logger } from '@hono/hono/logger';
+import { generateImage as fluxGenerateImage } from './gradio-api/flux.ts';
+import { parseResolution } from './utils/string.ts';
+import OpenAI from '@openai/openai';
 
 // https://api-inference.huggingface.co/v1
 const HF_API_URL = 'https://api-inference.huggingface.co';
@@ -59,7 +62,18 @@ app.post('/v1/chat/completions', async (c) => {
 });
 
 app.post('/v1/images/generations', async (c) => {
-  console.log('body:', await c.req.json());
+  const body = await c.req.json<OpenAI.ImageGenerateParams>();
+  console.log('body:', body);
+
+  switch (body.model) {
+    case 'flux-dev': {
+      return await fluxGenerateImage(body);
+    }
+    default:
+      return c.text('unknown model', 400);
+  }
+
+  return c.text('skibidi', 400);
 });
 
 // Deno.serve({ port: 7860 }, app.fetch);
