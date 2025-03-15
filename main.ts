@@ -41,7 +41,7 @@ app.post('/v1/chat/completions', async (c) => {
   const headers = new Headers(c.req.raw.headers);
   // headers.delete('Host');
   headers.delete('Authorization');
-  headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
+  headers.has('x-use-cache') || headers.set('x-use-cache', 'false');
   console.log('headers:', Object.fromEntries(headers));
 
   // const clonedRequest = await c.req.raw.clone();
@@ -68,7 +68,7 @@ app.post('/v1/chat/completions', async (c) => {
 app.post('/v1/images/generations', async (c) => {
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
-  headers.get('x-use-cache') || headers.set('x-use-cache', 'false');
+  headers.has('x-use-cache') || headers.set('x-use-cache', 'false');
   console.log('headers:', Object.fromEntries(headers));
 
   const params = await c.req.json<OpenAI.ImageGenerateParams>();
@@ -105,7 +105,7 @@ app.post('/v1/images/generations', async (c) => {
   const image = await response.arrayBuffer();
   const fileName = `${crypto.randomUUID()}.${ext}`;
 
-  await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image));
+  await Deno.writeFile(`./tmp/${fileName}`, new Uint8Array(image), { create: true });
 
   let data: any = {
     url: `${headers.get('Host')}/tmp/${fileName}`,
