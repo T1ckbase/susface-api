@@ -7,6 +7,20 @@ import OpenAI from '@openai/openai';
 import { encodeBase64 } from '@std/encoding/base64';
 import { ensureDir } from '@std/fs';
 
+interface Payload {
+  model: string;
+  inputs: string;
+  parameters?: {
+    guidance_scale?: number;
+    negative_prompt?: string;
+    num_inference_steps?: number;
+    width?: number;
+    height?: number;
+    scheduler?: string;
+    seed?: number;
+  };
+}
+
 // https://api-inference.huggingface.co/v1
 const HF_API_URL = 'https://api-inference.huggingface.co';
 const JINA_API_URL = 'https://deepsearch.jina.ai';
@@ -176,43 +190,69 @@ app.post('/v1/images/generations', async (c) => {
       // Create the appropriate data format based on the response_format
       if (params.response_format === 'b64_json') {
         return {
-          b64_json: encodeBase64(imageArrayBuffer),
+          success: true,
+          data: {
+            b64_json: encodeBase64(imageArrayBuffer),
+          },
         };
       } else {
         return {
-          url,
+          success: true,
+          data: {
+            url,
+          },
         };
       }
     } catch (error) {
       console.error(`Error generating image ${i + 1}:`, error);
-      throw error;
+      // Return failure object instead of throwing
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   });
 
-  try {
-    // Wait for all image generation promises to complete
-    const imageResults = await Promise.all(imagePromises);
+  // Wait for all image generation attempts to complete (regardless of success/failure)
+  const results = await Promise.all(imagePromises);
 
-    const responseBody = {
-      created: Math.floor(Date.now() / 1000),
-      data: imageResults,
-    };
+  // Filter out the successful results
+  const successfulImages = results
+    .filter((result) => result.success)
+    .map((result) => result.data);
 
-    return c.json(responseBody);
-  } catch (error) {
-    console.error('Error in parallel image generation:', error);
-    return c.json({ error: 'Failed to generate one or more images' }, 500);
+  // Collect errors for logging/reporting
+  const errors = results
+    .filter((result) => !result.success)
+    .map((result) => result.error);
+
+  if (errors.length > 0) {
+    console.warn(`${errors.length} of ${numImages} images failed to generate:`, errors);
   }
 
-  // switch (body.model) {
-  //   case 'flux-dev': {
-  //     return await fluxGenerateImage(body);
-  //   }
-  //   default:
-  //     return c.text('unknown model', 400);
-  // }
+  // Return successful images even if some failed
+  const responseBody = {
+    created: Math.floor(Date.now() / 1000),
+    data: successfulImages,
+    // Include error information if any images failed
+    ...(errors.length > 0
+      ? {
+        partial_failure: true,
+        error_count: errors.length,
+        success_count: successfulImages.length,
+      }
+      : {}),
+  };
 
-  // return c.text('skibidi', 400);
+  // If all images failed, return 500 status
+  if (successfulImages.length === 0) {
+    return c.json({
+      error: 'Failed to generate any images',
+      errors: errors,
+    }, 500);
+  }
+
+  return c.json(responseBody);
 });
 
 app.post('*', async (c) => {
