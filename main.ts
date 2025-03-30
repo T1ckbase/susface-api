@@ -255,6 +255,20 @@ app.post('/v1/images/generations', async (c) => {
   return c.json(responseBody);
 });
 
+// Google Translate TTS
+app.get('/translate_tts', async (c) => {
+  const params = {
+    client: 'tw-ob',
+    ie: 'UTF-8',
+    tl: c.req.query('tl') || 'en',
+    q: c.req.query('q') || '',
+  };
+
+  const url = 'https://translate.google.com/translate_tts?' + new URLSearchParams(params);
+
+  return await fetch(url);
+});
+
 app.post('*', async (c) => {
   const headers = new Headers(c.req.raw.headers);
   headers.delete('Authorization');
